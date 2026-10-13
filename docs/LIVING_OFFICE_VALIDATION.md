@@ -58,3 +58,28 @@ en GitHub. Se publicaron en `alexar69-pixel/openclaw3D`, rama
 `feature/living-office`, con la imagen incrustada en el README. No se realizó
 despliegue, instalación de plugin ni modificación de modelos, credenciales o
 configuración productiva.
+
+
+## Evolución 3D elástica (2026-10-13)
+
+- Three.js y tipos fijados en 0.180.0; playwright-core 1.58.2 para smoke de navegador.
+- 115 pruebas aprobadas en 14 archivos: 10 nuevas respecto al MVP, cubriendo
+  reservas, cinco plantas/100 puestos, agrupación/reversión, planta adicional,
+  perfiles explícitos, restauración, instancing, frustum, reutilización geométrica
+  y batching/limpieza del stream SSE.
+- Instalación congelada repetida con `npm ci`: 972 paquetes, lockfile sin cambios.
+- TypeScript, lint y build: aprobados; lint conserva 44 advertencias heredadas.
+- Smoke Chromium/WebGL real con SwiftShader: aprobado en desarrollo y standalone de producción. 100 puestos, cinco plantas
+  automáticas, sexto piso añadido, edición de función/equipo, proyecto y cierre,
+  traslado a otra planta y restauración de configuración después de recargar.
+- Se verificaron además 100 puestos en una sola planta. Se observó un bucle rAF
+  de 54–58 FPS en reposo con render bajo demanda; NO significa que la GPU
+  dibuje 58 escenas completas por segundo. El primer render continuo por software
+  fue lento (2.5 FPS), motivando invalidación y reutilización. Movimiento con GPU
+  física continúa pendiente de benchmark; no se garantiza un objetivo de FPS.
+- Captura real con datos DEMO: docs/images/living-office-3d-live.png.
+- Vista 2D y rutas originales conservadas; no se modifica OpenClaw productivo.
+
+Para repetir el smoke, iniciar el servidor aislado como describe la arquitectura,
+con puerto 3100, y ejecutar `node scripts/living-office-browser-smoke.mjs`.
+Requiere Chromium en `/usr/bin/chromium`, disponible en este entorno.

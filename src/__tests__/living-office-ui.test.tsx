@@ -3,9 +3,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import AgentInspector from '@/components/living-office/AgentInspector';
 import { demoAgents } from '@/living-office/demo';
 import OfficePage from '@/app/office/page';
-vi.mock('@/hooks/useLivingOffice', () => ({ useLivingOffice: () => ({ agents: [], connected: false, message: 'Gateway no disponible' }) }));
+vi.mock('@/hooks/useLivingOffice', () => { const snapshot = { agents: [], connected: false, message: 'Gateway no disponible' }; return { useLivingOffice: () => snapshot }; });
+vi.mock('@/components/living-office/OfficeRenderer3D', () => ({ default: () => <div>Canvas3D</div> }));
 vi.mock('@/components/living-office/OfficeRenderer', () => ({ default: () => <div>Canvas</div> }));
-afterEach(cleanup);
+afterEach(() => { cleanup(); localStorage.clear(); });
 describe('Living Office user flow', () => {
   it('starts disconnected without simulated agents and explicitly enables labelled demo', () => {
     render(<OfficePage />);

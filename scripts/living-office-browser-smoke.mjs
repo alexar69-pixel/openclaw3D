@@ -1,0 +1,62 @@
+import { chromium } from 'playwright-core';
+import { mkdir } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+// Run only against the isolated local development server, never production.
+const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', headless: true,
+  args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage'] });
+const page = await browser.newPage({ viewport: { width: 1600, height: 1050 } });
+const errors = []; page.on('pageerror', e => errors.push(e.message));
+try {
+  await page.goto('http://127.0.0.1:3100/office', { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.getByRole('checkbox', { name: 'Modo DEMO' }).check();
+  await page.getByLabel('Cantidad de agentes demo').fill('100');
+  await page.getByText(/100 sesiones/).waitFor();
+  await page.getByText(/5 plantas/).waitFor();
+  assert.equal(await page.getByText('WebGL no está disponible.', { exact: false }).count(), 0);
+  await page.getByRole('button', { name: /Agent 01/ }).click();
+  await page.getByRole('combobox', { name: 'Función' }).selectOption('researcher');
+  await page.getByLabel('Equipo asignado').fill('Architecture');
+  await page.getByRole('combobox', { name: 'Escenario DEMO' }).selectOption('team');
+  await page.getByText(/1 grupos confirmados/).waitFor();
+  await page.getByRole('button', { name: 'Encuadrar planta' }).click();
+  await page.waitForTimeout(4000);
+  await mkdir('docs/images', { recursive: true });
+  await page.screenshot({ path: 'docs/images/living-office-3d-live.png', fullPage: true });
+  await page.getByRole('combobox', { name: 'Planta', exact: true }).selectOption('auto-5');
+  await page.getByRole('button', { name: /Agent 97/ }).waitFor();
+  await page.getByRole('combobox', { name: 'Planta', exact: true }).selectOption('floor-1');
+  await page.getByRole('combobox', { name: 'Escenario DEMO' }).selectOption('completed');
+  await page.getByText(/0 grupos confirmados/).waitFor();
+  await page.getByRole('button', { name: /Agent 01 · idle/ }).waitFor();
+  await page.getByRole('button', { name: 'Añadir planta' }).click();
+  await page.getByText(/6 plantas/).waitFor();
+  await page.getByRole('combobox', { name: 'Planta de origen' }).selectOption('floor-6');
+  await page.getByRole('combobox', { name: 'Planta', exact: true }).selectOption('floor-6');
+  await page.getByRole('button', { name: /Agent 01 · idle/ }).waitFor();
+  await page.reload();
+  await page.getByRole('checkbox', { name: 'Modo DEMO' }).check();
+  await page.getByText(/20 sesiones/).waitFor();
+  await page.getByRole('combobox', { name: 'Planta', exact: true }).selectOption('floor-6');
+  await page.getByRole('button', { name: /Agent 01/ }).click();
+  assert.equal(await page.getByRole('combobox', { name: 'Función' }).inputValue(), 'researcher');
+  assert.equal(await page.getByLabel('Equipo asignado').inputValue(), 'Architecture');
+  assert.deepEqual(errors, []);
+  await page.close();
+  const scalePage = await browser.newPage({ viewport: { width: 1600, height: 1050 } });
+  scalePage.on('pageerror', e => errors.push(e.message));
+  await scalePage.goto('http://127.0.0.1:3100/office', { waitUntil: 'domcontentloaded' });
+  await scalePage.getByRole('checkbox', { name: 'Modo DEMO' }).check();
+  await scalePage.getByLabel('Agentes por planta').fill('100');
+  await scalePage.getByLabel('Cantidad de agentes demo').fill('100');
+  await scalePage.getByText(/100 sesiones.*1 plantas/).waitFor();
+  await scalePage.getByRole('button', { name: /Agent 100/ }).waitFor();
+  await scalePage.waitForTimeout(1500);
+  await scalePage.locator('[data-space-motion="settled"]').waitFor({ timeout: 60000 });
+  const fps = await scalePage.evaluate(() => new Promise(resolve => {
+    const times = []; const sample = time => { times.push(time); if (times.length < 30) requestAnimationFrame(sample); else resolve(29 * 1000 / (times.at(-1) - times[0])); }; requestAnimationFrame(sample);
+  }));
+  assert.deepEqual(errors, []);
+  console.log(`100 workspaces on a single floor: observed rAF ${Number(fps).toFixed(1)} FPS in headless Chromium/SwiftShader (idle, on-demand renderer; not a hardware GPU benchmark).`);
+  console.log('PASS: WebGL 3D, 100 workspaces, 5 automatic floors, personalization, collaboration/release, explicit new floor and transfer, reload.');
+  console.log('Screenshot: docs/images/living-office-3d-live.png');
+} finally { await browser.close(); }

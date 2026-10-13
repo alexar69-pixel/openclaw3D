@@ -1,5 +1,9 @@
 # OpenClaw Living Office
 
+Actualización: el visor ya incluye una escena Three.js 3D y un motor espacial
+elástico. Véase [Diseño espacial actual](LIVING_OFFICE_SPATIAL_DESIGN.md).
+Las secciones que siguen documentan la auditoría y el MVP cenital original.
+
 ## Auditoría (base bec78ad8)
 
 Next.js 16.1.6, React 19.2.3, TypeScript estricto, Canvas 2D, Tailwind 4,

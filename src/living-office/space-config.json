@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "agentsPerFloor": 24,
+  "floors": [{ "id": "floor-1", "name": "Operations 01" }],
+  "profiles": {},
+  "teams": {}
+}

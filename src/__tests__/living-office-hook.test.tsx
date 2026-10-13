@@ -1,0 +1,24 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { useLivingOffice } from '@/hooks/useLivingOffice';
+import { createAgent, type OfficeEvent } from '@/living-office/agent-state-engine';
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+it('batches SSE activity without losing transitions and cancels pending work on unmount', async () => {
+  const listeners = new Map<string, (event: MessageEvent) => void>();
+  const close = vi.fn(), cancel = vi.fn(); let frame: FrameRequestCallback = () => {};
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ connected: true, agents: [createAgent('a')] }) }));
+  vi.stubGlobal('EventSource', class { close = close; addEventListener(name: string, listener: (event: MessageEvent) => void) { listeners.set(name, listener); } });
+  vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => { frame = callback; return 7; }));
+  vi.stubGlobal('cancelAnimationFrame', cancel);
+  const hook = renderHook(() => useLivingOffice(false));
+  await waitFor(() => expect(hook.result.current.agents).toHaveLength(1));
+  const send = (type: OfficeEvent['type'], at: number) => listeners.get('activity')!(new MessageEvent('activity', { data: JSON.stringify({ sessionKey: 'a', id: `e:${at}`, type, at, runId: 'run', ...(type === 'researching' ? { tool: 'read' } : {}) }) }));
+  act(() => { send('start', 1); send('researching', 2); });
+  expect(hook.result.current.agents[0].state).toBe('idle');
+  act(() => frame(16));
+  expect(hook.result.current.agents[0].state).toBe('researching');
+  expect(hook.result.current.agents[0].events).toHaveLength(2);
+  expect(hook.result.current.agents[0].tools).toEqual(['read']);
+  act(() => send('end', 3)); hook.unmount();
+  expect(close).toHaveBeenCalledOnce(); expect(cancel).toHaveBeenCalledWith(7);
+});

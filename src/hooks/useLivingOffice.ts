@@ -24,11 +24,18 @@ export function useLivingOffice(demo: boolean) {
       } catch { if (active) { setConnected(false); setMessage('Gateway no disponible'); } }
       finally { inFlight = false; }
     };
+    const queued = new Map<string, OfficeEvent[]>(); let activityFrame = 0;
     const source = new EventSource('/api/living-office/events');
     source.addEventListener('activity', (e: MessageEvent) => {
       try {
         const event = JSON.parse(e.data) as OfficeEvent;
-        setAgents(previous => previous.map(a => applyEvent(a, event)));
+        if (!queued.has(event.sessionKey) && queued.size >= 100) return;
+        queued.set(event.sessionKey, [...(queued.get(event.sessionKey) ?? []), event].slice(-80));
+        if (!activityFrame) activityFrame = requestAnimationFrame(() => {
+          activityFrame = 0; if (!active) return;
+          const batch = new Map(queued); queued.clear();
+          setAgents(previous => previous.map(a => (batch.get(a.sessionKey) ?? []).reduce(applyEvent, a)));
+        });
       } catch { /* Malformed frames are ignored; the snapshot reconciles inventory. */ }
     });
     source.addEventListener('connection', (e: MessageEvent) => {
@@ -36,7 +43,7 @@ export function useLivingOffice(demo: boolean) {
     });
     source.onerror = () => { if (active) setConnected(false); };
     void refresh(); const timer = setInterval(() => void refresh(), 10000);
-    return () => { active = false; controller.abort(); source.close(); clearInterval(timer); };
+    return () => { active = false; controller.abort(); source.close(); clearInterval(timer); if (activityFrame) cancelAnimationFrame(activityFrame); queued.clear(); };
   }, [demo]);
   return { agents, connected, message };
 }

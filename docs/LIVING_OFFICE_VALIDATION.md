@@ -53,5 +53,8 @@ puestos vacíos hasta recibir nueva evidencia.
    obstáculos si se añaden paredes físicas.
 5. Revisar las 44 advertencias heredadas por separado.
 
-Los cambios son locales en feature/living-office; no se hizo push, despliegue,
-instalación de plugin ni modificación de modelos/credenciales/config productiva.
+Tras la validación, el usuario autorizó publicar el código y el concepto visual
+en GitHub. Se publicaron en `alexar69-pixel/openclaw3D`, rama
+`feature/living-office`, con la imagen incrustada en el README. No se realizó
+despliegue, instalación de plugin ni modificación de modelos, credenciales o
+configuración productiva.

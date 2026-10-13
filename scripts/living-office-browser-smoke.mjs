@@ -2,12 +2,14 @@ import { chromium } from 'playwright-core';
 import { mkdir } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 // Run only against the isolated local development server, never production.
+const baseURL = process.env.LIVING_OFFICE_TEST_URL ?? 'http://127.0.0.1:3050';
+assert.equal(new URL(baseURL).hostname, '127.0.0.1', 'Smoke only targets the isolated local server');
 const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', headless: true,
   args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage'] });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1050 } });
 const errors = []; page.on('pageerror', e => errors.push(e.message));
 try {
-  await page.goto('http://127.0.0.1:3100/office', { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.goto(`${baseURL}/office`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   await page.getByRole('checkbox', { name: 'Modo DEMO' }).check();
   await page.getByLabel('Cantidad de agentes demo').fill('100');
   await page.getByText(/100 sesiones/).waitFor();
@@ -22,6 +24,10 @@ try {
   await page.waitForTimeout(4000);
   await mkdir('docs/images', { recursive: true });
   await page.screenshot({ path: 'docs/images/living-office-3d-live.png', fullPage: true });
+  await page.getByRole('button', { name: 'Ver puesto', exact: true }).click();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: 'docs/images/living-office-premium-detail.png', fullPage: true });
+  await page.getByRole('button', { name: 'Encuadrar planta', exact: true }).click();
   await page.getByRole('combobox', { name: 'Planta', exact: true }).selectOption('auto-5');
   await page.getByRole('button', { name: /Agent 97/ }).waitFor();
   await page.getByRole('combobox', { name: 'Planta', exact: true }).selectOption('floor-1');
@@ -40,11 +46,19 @@ try {
   await page.getByRole('button', { name: /Agent 01/ }).click();
   assert.equal(await page.getByRole('combobox', { name: 'Función' }).inputValue(), 'researcher');
   assert.equal(await page.getByLabel('Equipo asignado').inputValue(), 'Architecture');
+  await page.getByLabel('Cantidad de agentes demo').fill('8');
+  await page.getByRole('combobox', { name: 'Gráficos' }).selectOption('high');
+  await page.locator('canvas[data-graphics-backend="detailed"][data-rendered-frames]').waitFor({ timeout: 60000 });
+  await page.getByRole('button', { name: 'Ver puesto', exact: true }).click();
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: 'docs/images/living-office-premium-detail.png', fullPage: true });
+  await page.getByRole('combobox', { name: 'Gráficos' }).selectOption('light');
+  await page.locator('canvas[data-graphics-backend="light"][data-rendered-frames]').waitFor({ timeout: 60000 });
   assert.deepEqual(errors, []);
   await page.close();
   const scalePage = await browser.newPage({ viewport: { width: 1600, height: 1050 } });
   scalePage.on('pageerror', e => errors.push(e.message));
-  await scalePage.goto('http://127.0.0.1:3100/office', { waitUntil: 'domcontentloaded' });
+  await scalePage.goto(`${baseURL}/office`, { waitUntil: 'domcontentloaded' });
   await scalePage.getByRole('checkbox', { name: 'Modo DEMO' }).check();
   await scalePage.getByLabel('Agentes por planta').fill('100');
   await scalePage.getByLabel('Cantidad de agentes demo').fill('100');
@@ -52,11 +66,24 @@ try {
   await scalePage.getByRole('button', { name: /Agent 100/ }).waitFor();
   await scalePage.waitForTimeout(1500);
   await scalePage.locator('[data-space-motion="settled"]').waitFor({ timeout: 60000 });
+  await scalePage.evaluate(async () => {
+    let previous = -1, stable = 0;
+    for (let i = 0; i < 120 && stable < 12; i++) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const current = Number(document.querySelector('canvas').dataset.renderedFrames);
+      stable = current === previous ? stable + 1 : 0; previous = current;
+    }
+  });
+  console.log(`Graphics backend: ${await scalePage.locator('canvas').getAttribute('data-graphics-backend')}`);
+  const beforeFrames = await scalePage.locator('canvas').getAttribute('data-rendered-frames');
   const fps = await scalePage.evaluate(() => new Promise(resolve => {
     const times = []; const sample = time => { times.push(time); if (times.length < 30) requestAnimationFrame(sample); else resolve(29 * 1000 / (times.at(-1) - times[0])); }; requestAnimationFrame(sample);
   }));
+  const afterFrames = await scalePage.locator('canvas').getAttribute('data-rendered-frames');
+  assert.ok(Number(afterFrames) - Number(beforeFrames) <= 1, 'Stable office must not continuously redraw');
+  console.log(`Idle actual redraws across sampled frames: ${Number(afterFrames) - Number(beforeFrames)}`);
   assert.deepEqual(errors, []);
   console.log(`100 workspaces on a single floor: observed rAF ${Number(fps).toFixed(1)} FPS in headless Chromium/SwiftShader (idle, on-demand renderer; not a hardware GPU benchmark).`);
-  console.log('PASS: WebGL 3D, 100 workspaces, 5 automatic floors, personalization, collaboration/release, explicit new floor and transfer, reload.');
+  console.log('PASS: WebGL 3D, 100 workspaces, 5 automatic floors, personalization, collaboration/release, explicit new floor and transfer, reload, inventory shrink and detailed/light presets.');
   console.log('Screenshot: docs/images/living-office-3d-live.png');
 } finally { await browser.close(); }

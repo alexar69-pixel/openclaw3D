@@ -81,5 +81,30 @@ configuración productiva.
 - Vista 2D y rutas originales conservadas; no se modifica OpenClaw productivo.
 
 Para repetir el smoke, iniciar el servidor aislado como describe la arquitectura,
-con puerto 3100, y ejecutar `node scripts/living-office-browser-smoke.mjs`.
+con puerto 3050, y ejecutar `node scripts/living-office-browser-smoke.mjs`.
 Requiere Chromium en `/usr/bin/chromium`, disponible en este entorno.
+
+
+## Actualización visual premium
+
+- Acabado seleccionado: futurista premium; controles de calidad y acercamiento.
+- Pruebas: 116 aprobadas; ampliadas con comprobación de geometría humana curva,
+  sillas detalladas, vegetación, texturas compartidas y liberación de recursos.
+- Build/TypeScript y lint: aprobados; 44 advertencias heredadas, sin errores.
+- Smoke funcional de 100 puestos en Chromium/SwiftShader: aprobado. La prueba
+  espera a que la cámara termine de estabilizarse y verifica que la oficina
+  estable no redibuje continuamente: 0 redibujados durante 30 frames observados
+  y rAF de 60 FPS en reposo. No equivale a FPS de render completo.
+- Se verificó adicionalmente el modo Detallados, reflejos HDR, sombras, enfoque
+  del puesto y cambio al modo Ligero en un escenario de ocho sesiones DEMO.
+- Las primeras mediciones incluyeron inicialización y amortiguación de cámara,
+  con valores bajos por software; no se publican como benchmark de GPU física.
+- Captura detallada real: docs/images/living-office-premium-detail.png.
+- Puerto de desarrollo/validación actualizado a 3050, según preferencia del usuario.
+
+- La repetición final se hizo tras detener el servidor antiguo que seguía
+  ocupando 3050; las primeras pruebas con recursos de compilación mezclados
+  se descartaron. El standalone nuevo pasó la prueba de 100 puestos.
+
+- Se corrigió una carrera al reducir el inventario antes de actualizar el plano:
+  los puestos sin agente se omiten; prueba de regresión incluida.

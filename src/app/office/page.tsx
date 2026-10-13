@@ -20,6 +20,7 @@ export default function OfficePage() {
   const [layout, setLayout] = useState(() => validateLayout(defaultLayout));
   const [floor, setFloor] = useState(defaultLayout.floors[0].id), [filter, setFilter] = useState('all');
   const [zoom, setZoom] = useState(.7), [selected, setSelected] = useState<string>(), [layoutError, setLayoutError] = useState('');
+  const [quality, setQuality] = useState<'auto' | 'high' | 'light'>('auto');
   const [view, setView] = useState<'3d' | '2d'>('3d'), [scenario, setScenario] = useState<DemoScenario>('mixed');
   const [liveSpaceConfig, setLiveSpaceConfig] = useState(() => validateSpaceConfig(defaultSpaceConfig));
   const [demoConfig, setDemoConfig] = useState(demoSpaceConfig);
@@ -38,7 +39,7 @@ export default function OfficePage() {
   const spacePlan = useElasticOffice(agents, groups, spaceConfig, demo);
   const activeSpaceFloor = spacePlan.floors.some(f => f.id === spaceFloor) ? spaceFloor : spacePlan.floors[0]?.id ?? 'floor-1';
   const shownAgents = agents.filter(a => (filter === 'all' || a.state === filter) && (view === '3d' ? spacePlan.workspaces.find(w => w.agentId === a.id)?.floor === activeSpaceFloor : scene.rooms.find(r => r.id === scene.positions[a.id]?.room)?.floor === floor));
-  return <main className="min-h-screen lg:h-screen bg-slate-950 text-slate-200 flex flex-col p-4 gap-4 font-mono">
+  return <main className="min-h-screen lg:h-screen bg-slate-950 text-slate-200 flex flex-col p-4 gap-4 font-sans">
     <header className="flex flex-wrap justify-between gap-3 items-center">
       <div><h1 className="text-xl text-cyan-300 font-bold">OPENCLAW <span className="text-white">LIVING OFFICE</span></h1><p className="text-xs text-slate-400 mt-1">{demo ? 'DEMO · datos simulados · Gateway desconectado del visor' : live.message}</p></div>
       <nav className="flex gap-4 text-xs"><Link href="/">Dashboard</Link><Link href="/office/legacy">Oficina original</Link></nav>
@@ -47,6 +48,7 @@ export default function OfficePage() {
       <label><input type="checkbox" checked={demo} onChange={e => setDemo(e.target.checked)} /> Modo DEMO</label>
       {demo && <label>Agentes simulados <input aria-label="Cantidad de agentes demo" type="number" min={5} max={100} value={count} onChange={e => setCount(Number(e.target.value) || 5)} className="w-16 bg-slate-800 rounded p-1" /></label>}
       <label>Vista <select aria-label="Vista de oficina" className="bg-slate-800 p-1" value={view} onChange={e => setView(e.target.value as '3d' | '2d')}><option value="3d">3D elástica</option><option value="2d">2D cenital</option></select></label>
+      {view === '3d' && <label>Gráficos <select className="bg-slate-800 p-1" value={quality} onChange={e => setQuality(e.target.value as typeof quality)}><option value="auto">Automáticos</option><option value="high">Detallados</option><option value="light">Ligeros</option></select></label>}
       {demo && <label>Escenario DEMO <select className="bg-slate-800 p-1" value={scenario} onChange={e => setScenario(e.target.value as DemoScenario)}><option value="mixed">Actividad mixta</option><option value="solo">Trabajo individual</option><option value="team">Crear proyecto</option><option value="completed">Finalizar proyecto</option></select></label>}
       {view === '3d' ? <label>Planta <select className="bg-slate-800 p-1" value={activeSpaceFloor} onChange={e => setSpaceFloor(e.target.value)}>{spacePlan.floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label> : <label>Planta <select className="bg-slate-800 p-1" value={floor} onChange={e => setFloor(e.target.value)}>{layout.floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>}
       <label>Estado <select className="bg-slate-800 p-1" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">Todos</option>{STATES.map(s => <option key={s}>{s}</option>)}</select></label>
@@ -62,7 +64,7 @@ export default function OfficePage() {
     {!demo && !live.connected && <p role="status" className="text-amber-200 text-xs">Sin conexión verificada. No se muestran tareas simuladas. Offline describe la conexión del monitor.</p>}
     <div className="flex flex-1 min-h-0 flex-col lg:flex-row gap-4">
       <div className="flex flex-1 min-w-0 flex-col gap-3">
-        {view === '3d' ? <OfficeRenderer3D plan={spacePlan} agents={agents} floor={activeSpaceFloor} filter={filter} zoom={zoom} selected={selected} onSelect={setSelected} onFallback={() => setView('2d')} /> : <OfficeRenderer agents={agents} groups={groups} layout={layout} floor={floor} filter={filter} zoom={zoom} selected={selected} onSelect={setSelected} />}
+        {view === '3d' ? <OfficeRenderer3D quality={quality} plan={spacePlan} agents={agents} floor={activeSpaceFloor} filter={filter} zoom={zoom} selected={selected} onSelect={setSelected} onFallback={() => setView('2d')} /> : <OfficeRenderer agents={agents} groups={groups} layout={layout} floor={floor} filter={filter} zoom={zoom} selected={selected} onSelect={setSelected} />}
         <div className="flex flex-wrap gap-2 max-h-32 overflow-auto" aria-label="Seleccionar agente">{shownAgents.map(a => <button key={a.id} aria-pressed={selected === a.id} className="text-xs border border-cyan-900 rounded px-3 py-2 hover:bg-cyan-950" onClick={() => setSelected(a.id)}>{a.name} · {groups.some(g => g.members.includes(a.id)) && a.state !== 'waiting' ? 'collaborating' : a.state}</button>)}</div>
         {!agents.length && <p className="text-slate-400 text-sm">No hay sesiones observadas. Activa DEMO para explorar la oficina.</p>}
       </div>

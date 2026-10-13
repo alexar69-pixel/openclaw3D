@@ -102,3 +102,25 @@ si se quiere una sola estación por agente registrado, sincronizar perfiles entr
 usuarios, verificar Gateway productivo autorizado y acordar eventos explícitos
 de delegación. La calidad visual actual es un prototipo geométrico; la imagen
 conceptual muestra una dirección artística de mayor detalle.
+
+
+## Acabado futurista premium
+
+El usuario eligió esta dirección artística el 2026-10-13. Se sustituyen superficies
+facetadas y avatares de bloques por geometrías curvas, figuras humanas, escritorios
+con grano de madera, teclados y accesorios, sillas con reposabrazos y base de cinco
+ruedas, estanterías, mamparas de vidrio ahumado y vegetación de hojas instanciadas.
+Los nombres flotantes solo aparecen para el seleccionado, reduciendo ruido visual.
+
+Las texturas se generan localmente y se comparten entre instancias. No se descargan
+activos externos. `Detallados` habilita entorno HDR procedural y sombras PCF;
+`Ligeros` usa iluminación sencilla y sombras de contacto. `Automáticos` selecciona
+el modo ligero al detectar renderizado por software. Los materiales mantienen
+la asignación de color del puesto y el estado real del monitor. Las líneas de las
+pantallas son decoración abstracta, no texto de tareas ni métricas inventadas.
+
+`Ver puesto` centra la cámara en el espacio seleccionado; `Encuadrar planta`
+restaura la vista general. La escena mantiene reconfiguración, plantas y propiedad.
+Esta es una evolución del prototipo: el nivel artístico de la referencia ilustrada
+requiere modelos y materiales de producción adicionales; no se presenta como una
+reproducción fotorealista equivalente. Las figuras son representaciones simplificadas.

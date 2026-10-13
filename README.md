@@ -4,9 +4,12 @@ Oficina virtual para monitorizar sesiones de OpenClaw. Basada en
 [ruiqili2/agent-monitor](https://github.com/ruiqili2/agent-monitor), conservando
 su dashboard y la oficina original.
 
-![Captura real de la oficina 3D con datos DEMO](docs/images/living-office-3d-live.png)
+![Acabado futurista premium: captura real en modo DEMO](docs/images/living-office-premium-detail.png)
 
 **Esta captura procede del renderer 3D ejecutado en navegador, con datos DEMO.**
+Acabado elegido: **futurista premium**, con mobiliario curvo, superficies de
+madera, vidrio ahumado, figuras humanas y detalles cian. `Ver puesto` acerca la
+cámara; `Gráficos` permite elegir Automáticos, Detallados o Ligeros.
 `/office` ofrece una escena Three.js dinámica, puestos personales con función,
 equipo y color configurables, plantas automáticas y áreas temporales de proyecto.
 Los puestos conservan su propietario y vuelven a su origen al terminar la colaboración.
@@ -15,10 +18,12 @@ La vista 2D sigue disponible; la oficina anterior está en `/office/legacy`.
 - [Diseño espacial 3D y comportamiento elástico](docs/LIVING_OFFICE_SPATIAL_DESIGN.md)
 - [Arquitectura y plan de implementación](docs/LIVING_OFFICE_ARCHITECTURE.md)
 - [Validación y limitaciones](docs/LIVING_OFFICE_VALIDATION.md)
-- [Abrir la captura real completa](docs/images/living-office-3d-live.png)
+- [Ver el acabado premium de cerca](docs/images/living-office-premium-detail.png)
+- [Ver la planta completa](docs/images/living-office-3d-live.png)
+- [Comparar las referencias artísticas](docs/LIVING_OFFICE_VISUAL_OPTIONS.md)
 - [Concepto artístico original (no es la implementación)](docs/images/living-office-concept.png)
 
-115 pruebas aprobadas; TypeScript y build correctos. Escena WebGL y flujo de
+116 pruebas aprobadas; TypeScript y build correctos. Escena WebGL y flujo de
 100 puestos probados en Chromium local. La conexión al Gateway sigue siendo de
 solo lectura y está pendiente de validación productiva autorizada.
 La colaboración requiere evidencia explícita; los perfiles organizativos no la inventan.
@@ -28,8 +33,10 @@ La colaboración requiere evidencia explícita; los perfiles organizativos no la
 ```sh
 npm ci --ignore-scripts --cache /tmp/living-npm-cache --no-audit --no-fund
 npm test
-npm run dev
+npm run dev -- --port 3050
 ```
+
+Ruta de desarrollo: `/office` en el puerto 3050.
 
 No instalar plugins ni reiniciar OpenClaw productivo para probar esta interfaz.
 Ver la documentación para arrancar en modo aislado sin credenciales productivas.
@@ -74,8 +81,10 @@ Watch your agents work in a pixel-art office, monitor live sessions, send direct
 git clone https://github.com/Franzferdinan51/agent-monitor-openclaw-dashboard.git
 cd agent-monitor-openclaw-dashboard
 npm install
-npm run dev
+npm run dev -- --port 3050
 ```
+
+Ruta de desarrollo: `/office` en el puerto 3050.
 
 Open `http://localhost:3000`.
 

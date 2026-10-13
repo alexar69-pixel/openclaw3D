@@ -1,3 +1,39 @@
+# OpenClaw Living Office
+
+Oficina virtual para monitorizar sesiones de OpenClaw. Basada en
+[ruiqili2/agent-monitor](https://github.com/ruiqili2/agent-monitor), conservando
+su dashboard y la oficina original.
+
+![Concepto visual de OpenClaw Living Office](docs/images/living-office-concept.png)
+
+**La imagen es un concepto 3D con datos DEMO.** El MVP implementado es un visor
+cenital 2D en `/office`, con estados por eventos, puestos vacíos, plano JSON,
+zoom, desplazamiento, filtros e inspector. La oficina anterior sigue en
+`/office/legacy`.
+
+- [Arquitectura y plan de implementación](docs/LIVING_OFFICE_ARCHITECTURE.md)
+- [Validación y limitaciones](docs/LIVING_OFFICE_VALIDATION.md)
+- [Abrir la imagen completa](docs/images/living-office-concept.png)
+
+105 pruebas aprobadas; TypeScript y build correctos. Conexión de solo lectura
+probada con un Gateway local simulado, pendiente de validación productiva.
+La colaboración requiere evidencia explícita y no se inventa por nombres de sesión.
+
+## Desarrollo
+
+```sh
+npm ci --ignore-scripts --cache /tmp/living-npm-cache --no-audit --no-fund
+npm test
+npm run dev
+```
+
+No instalar plugins ni reiniciar OpenClaw productivo para probar esta interfaz.
+Ver la documentación para arrancar en modo aislado sin credenciales productivas.
+
+---
+
+## Documentación del proyecto original
+
 # AgentMonitor for OpenClaw
 
 Real-time AI agent visualization and control dashboard for [OpenClaw](https://github.com/openclaw/openclaw).

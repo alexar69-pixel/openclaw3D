@@ -68,6 +68,8 @@ export interface SessionLiveState {
   lastAgentEventAt: number | null;
   /** RunId from the latest event. */
   lastRunId?: string;
+  /** Latest received event kind resolves events arriving within the same millisecond. */
+  lastEventKind?: 'chat' | 'agent';
 }
 
 /** Mirrors openclaw's GatewaySessionRow (not re-exported from plugin-sdk). */
@@ -383,7 +385,8 @@ export function readOpenClawConfig(): GatewayConnectionConfig | null {
 /** Callback signature for state change subscribers. Receives the specific session that changed. */
 export type StateChangeCallback = (sessionKey: string, state: SessionLiveState) => void;
 
-class GatewayConnection {
+export class GatewayConnection {
+  constructor(private readonly monitorOnly = false) {}
   private ws: WebSocket | null = null;
   private config: GatewayConnectionConfig | null = null;
   private connected = false;
@@ -410,6 +413,11 @@ class GatewayConnection {
 
   /** Subscribers notified on state changes (for future SSE). */
   private subscribers = new Set<StateChangeCallback>();
+  private connectionSubscribers = new Set<(ready: boolean) => void>();
+
+  subscribeConnection(callback: (ready: boolean) => void): void { this.connectionSubscribers.add(callback); }
+  unsubscribeConnection(callback: (ready: boolean) => void): void { this.connectionSubscribers.delete(callback); }
+  private notifyConnection(ready: boolean): void { for (const callback of this.connectionSubscribers) { try { callback(ready); } catch { /* subscriber isolation */ } } }
 
   /** Reconnection state. */
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -461,6 +469,7 @@ class GatewayConnection {
 
   /** Send an RPC request over the persistent connection. */
   request<T = unknown>(method: string, params: Record<string, unknown> = {}, timeoutMs = 10_000): Promise<T> {
+    if (this.monitorOnly && !['sessions.list', 'agents.list'].includes(method)) return Promise.reject(new Error('Read-only monitor'));
     return new Promise<T>((resolve, reject) => {
       // If not connected, try to connect first, then send after auth
       if (!this.isReady) {
@@ -544,6 +553,8 @@ class GatewayConnection {
     ws.on('close', (_code, _reason) => {
       this.connected = false;
       this.authenticated = false;
+      if (this.monitorOnly) this.liveStates.clear();
+      this.notifyConnection(false);
 
       // Reject pending requests — the connection is gone
       for (const [id, pending] of this.pendingRequests) {
@@ -583,11 +594,12 @@ class GatewayConnection {
     if (type === 'res' && msg.id === 'connect-auth') {
       if (msg.ok) {
         this.authenticated = true;
+        this.notifyConnection(true);
         console.log('[gateway-connection] Authenticated successfully');
         // Fetch agent list now that we're authenticated
         this.fetchAgents();
       } else {
-        console.error('[gateway-connection] Auth failed:', msg.error);
+        console.error('[gateway-connection] Authentication failed');
         this.ws?.close();
       }
       return;
@@ -654,6 +666,7 @@ class GatewayConnection {
     this.liveStates.set(sessionKey, {
       sessionKey,
       agent: prev?.agent ?? this.resolveAgent(sessionKey),
+      lastEventKind: 'chat',
       chatStatus: state as SessionLiveState['chatStatus'],
       agentStatus: prev?.agentStatus ?? null,
       agentEventData: prev?.agentEventData ?? null,
@@ -662,6 +675,7 @@ class GatewayConnection {
       lastRunId: (payload.runId as string) ?? prev?.lastRunId,
     });
 
+    if (this.monitorOnly && this.liveStates.size > 1000) this.liveStates.delete(this.liveStates.keys().next().value!);
     this.notifySubscribers(sessionKey);
   }
 
@@ -688,13 +702,15 @@ class GatewayConnection {
       sessionKey,
       agent: prev?.agent ?? this.resolveAgent(sessionKey),
       chatStatus: prev?.chatStatus ?? null,
+      lastEventKind: 'agent',
       agentStatus: stream,
       agentEventData: trimmedData,
       lastChatEventAt: prev?.lastChatEventAt ?? null,
-      lastAgentEventAt: (payload.ts as number) ?? Date.now(),
+      lastAgentEventAt: Date.now(),
       lastRunId: (payload.runId as string) ?? prev?.lastRunId,
     });
 
+    if (this.monitorOnly && this.liveStates.size > 1000) this.liveStates.delete(this.liveStates.keys().next().value!);
     this.notifySubscribers(sessionKey);
   }
 
@@ -742,8 +758,8 @@ class GatewayConnection {
           if (agent) state.agent = agent;
         }
       }
-    } catch (err) {
-      console.error('[gateway-connection] Failed to fetch agents:', err);
+    } catch {
+      console.error('[gateway-connection] Failed to fetch agents');
     } finally {
       this.agentsFetchInFlight = false;
     }
@@ -806,7 +822,7 @@ class GatewayConnection {
     challenge?: Record<string, unknown>,
   ): Record<string, unknown> | null {
     try {
-      const identity = this.deviceIdentity ?? loadOrCreateDeviceIdentity(config.stateDir);
+      const identity = this.deviceIdentity ?? loadOrCreateDeviceIdentity(this.monitorOnly ? join(process.cwd(), '.living-office') : config.stateDir);
       const publicKey = normalizeDevicePublicKeyBase64Url(identity.publicKeyPem);
       if (!publicKey) {
         return null;
@@ -820,7 +836,7 @@ class GatewayConnection {
         clientId: 'gateway-client',
         clientMode: 'backend',
         role: 'operator',
-        scopes: [...OPERATOR_SCOPES],
+        scopes: this.monitorOnly ? ['operator.read'] : [...OPERATOR_SCOPES],
         signedAtMs: signedAt,
         token: auth?.token ?? null,
         nonce,
@@ -839,7 +855,7 @@ class GatewayConnection {
           mode: 'backend',
         },
         role: 'operator',
-        scopes: [...OPERATOR_SCOPES],
+        scopes: this.monitorOnly ? ['operator.read'] : [...OPERATOR_SCOPES],
         caps: [],
         commands: [],
         permissions: {},
@@ -854,8 +870,8 @@ class GatewayConnection {
           ...(nonce ? { nonce } : {}),
         },
       };
-    } catch (err) {
-      console.error('[gateway-connection] Failed to build connect payload:', err);
+    } catch {
+      console.error('[gateway-connection] Failed to build connect payload');
       return null;
     }
   }

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "floors": [{ "id": "operations", "name": "Operations" }],
+  "rooms": [
+    { "id": "work", "name": "Execution Lab", "department": "Engineering", "floor": "operations", "kind": "work", "capacity": 100, "columns": 10 },
+    { "id": "research", "name": "Research Hub", "department": "Knowledge", "floor": "operations", "kind": "research", "capacity": 100, "columns": 10 },
+    { "id": "collaboration", "name": "Collaboration Studio", "department": "Projects", "floor": "operations", "kind": "collaboration", "capacity": 100, "columns": 10 },
+    { "id": "lounge", "name": "Standby Lounge", "department": "Operations", "floor": "operations", "kind": "lounge", "capacity": 100, "columns": 10 }
+  ]
+}
